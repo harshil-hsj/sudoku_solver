@@ -14,6 +14,7 @@ function App() {
     [0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0], 
   ]);
+  const [visited,setVisited] = useState(Array.from({ length: 9 }, () => Array(9).fill(0)));
   
 
   function pauseUsingSetTimeout() {
@@ -23,19 +24,30 @@ function App() {
     }, 2000); // Pause for 2000 milliseconds (2 seconds)
 }
     const reset = () =>{
-        setArray(  Array(9).fill().map(() => Array(9).fill(0)))
+        setArray(  Array(9).fill().map(() => Array(9).fill(0)));
+        setVisited( Array(9).fill().map(() => Array(9).fill(0)) );
     }
+
     const change = (row,col) =>{
-        const value = prompt("enter number");
+        const value = parseInt(prompt("enter number"));
+        if(value < 0 || value > 9){
+            alert("enter valid number");
+            return;
+        }
         const newArray = [...array];
         newArray[row][col] = value;
+        const newVis = [...visited];
+        newVis[row][col] = 1;
+        setVisited(newVis);
         setArray(newArray);
     }
+
     const changeArray = (row, col, num)=>{
         const newArray = [...array];
         newArray[row][col] = num;
         setArray(newArray);
     }
+
     const findEmptySpot = (board) => {
         for (let i = 0; i < 9; i++) {
             for (let j = 0; j < 9; j++) {
@@ -78,24 +90,86 @@ function App() {
         }
 
         const [row, col] = emptySpot;
-
+        
         for (let num = 1; num <= 9; num++) {
              
             const numStr = num;
             if (isValid(array, row, col, numStr)) {
-                // board[row][col] = numStr; // Place the number
-                changeArray(row,col,numStr);
-                
+                const newArray = [...array];
+                newArray[row][col] = num; // Place the number
+
+                setArray(newArray); // Update the array state
                 if (backtrack()) {
-                    return true; // Recursively continue
+                    return true; // Continue solving
                 }
-                changeArray(row,col,0);// Backtrack
+                newArray[row][col] = 0; // Backtrack
+                setArray(newArray); // Update state back
               
             }
         }
         return false; // No solution found
     };
+    function isSudokuValid(board) {
+        const isRowValid = (row) => {
+            const seen = new Set();
+            for (let num of row) {
+                if (num !== 0) {
+                    if (seen.has(num)) return false; // Duplicate found
+                    seen.add(num);
+                }
+            }
+            return true;
+        };
     
+        const isColumnValid = (colIndex) => {
+            const seen = new Set();
+            for (let i = 0; i < 9; i++) {
+                const num = board[i][colIndex];
+                if (num !== 0) {
+                    if (seen.has(num)) return false; // Duplicate found
+                    seen.add(num);
+                }
+            }
+            return true;
+        };
+    
+        const isBoxValid = (rowStart, colStart) => {
+            const seen = new Set();
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const num = board[rowStart + i][colStart + j];
+                    if (num !== 0) {
+                        if (seen.has(num)) return false; // Duplicate found
+                        seen.add(num);
+                    }
+                }
+            }
+            return true;
+        };
+    
+        // Check all rows, columns, and 3x3 boxes
+        for (let i = 0; i < 9; i++) {
+            if (!isRowValid(board[i])) return false; // Check row
+            if (!isColumnValid(i)) return false; // Check column
+        }
+    
+        // Check all 3x3 boxes
+        for (let row = 0; row < 9; row += 3) {
+            for (let col = 0; col < 9; col += 3) {
+                if (!isBoxValid(row, col)) return false; // Check box
+            }
+        }
+    
+        return true; // The board is valid
+    }
+  const solveSudoku = () =>{
+    if(!isSudokuValid(array)){
+        alert("enter valid inputs");
+        return;
+    }
+    
+    backtrack();
+  }  
   return (
     <div className="App">
       <h1>Sudoku Table</h1>
@@ -112,7 +186,7 @@ function App() {
           ))}
         </tbody>
       </table>
-      <button onClick = {backtrack}>
+      <button onClick = {solveSudoku}>
           solve this 
       </button>
       <button onClick = {reset}>
